@@ -2,7 +2,7 @@
 .global _start
 _start:
 
-// Load the address of the GPIO controller in to register 0
+// Load the address of the GPIO controller into register 0
 // so that GPIO register addresses can be addressed relative
 // to this address
 ldr r0,=0x20200000
@@ -12,12 +12,14 @@ mov r1,#1 // 0b001 is output mode for any GPIO
 lsl r1,#21 // GPIO 47 is at bits 23-21 in GPIO Function Select Register 4
 str r1,[r0,#16] // Function Select Register 4 is at address 0x2020010
 
+// Setup bit change for GPIO 47 in both GPIO Output Clear and Set Registers
+mov r1,#1 // 0b1 sets GPIO pins
+lsl r1,#15 // GPIO 47 is at bit 15 in GPIO Output Clear/Set Register 1
+
 // Infinite loop
 loop$:
 
 // Clear GPIO 47 (ACT LED) to turn it on
-mov r1,#1 // 0b1 sets GPIO pins
-lsl r1,#15 // GPIO 47 is at bit 15 in GPIO Output Clear Register 1
 str r1,[r0,#44] // GPIO Clear Register 1 is at address 0x2020002C
 
 // Wait
@@ -28,8 +30,6 @@ cmp r2,#0 // Check if the value has become 0
 bne wait1$ // Repeat subtraction and check if not at 0 yet
 
 // Set GPIO 47 (ACT LED) to turn it off
-mov r1,#1 // 0b1 sets GPIO pins
-lsl r1,#15 // GPIO 47 is at bit 15 in GPIO Output Set Register 1
 str r1,[r0,#32] // GPIO Set Register 1 is at address 0x20200020
 
 // Wait
