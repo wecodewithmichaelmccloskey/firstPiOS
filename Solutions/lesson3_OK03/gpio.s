@@ -25,7 +25,7 @@ SetGpioFunction:
     // Each Function Select Register selects for 10 pins and addresses increase by 4 from the
     // GPIO controller address starting at the least significant pin.
     functionLoop$:
-        comp r2,#9 // checks if the relative pin number is valid (<= 9)
+        cmp r2,#9 // checks if the relative pin number is valid (<= 9)
         subhi r2,#10 // if invalid subtract 10
         addhi r0,#4 // if invalid move to the next register
         bhi functionLoop$ // loop until relative pin number is valid
@@ -33,8 +33,55 @@ SetGpioFunction:
     // Set the determined function select register with the specified function
     add r2, r2,lsl #1 // mulitplication by 3 to get function select bit for relative pin number because each pin gets 3 bits to specify function
 // UPDATE ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    lsl rl, r2 // shift function value to correct bit placement
-    str rl,[r0] // set the determined function select register
+    lsl r1,r2 // shift function value to correct bit placement
+    str r1,[r0] // set the determined function select register
 
     // Return
     pop {pc} // the lr was previously put onto the stack so we pop and put it into the pc to return
+
+// Turns a GPIO pin on or off.
+// Inputs: r0 - Pin number, r1 - on/off
+.globl SetGpio
+SetGpio:
+    pinNum .req r0 // Sets an alias for r0
+    pinVal .req r1 // Sets an alias for r1
+
+    // check for valid input
+    cmp pinNum,#53 // Invalid if pin number >53
+    movhi pc,lr
+
+    push {lr} // preserve lr before making another function call
+
+    // preserve pinNum before making another function call
+    mov r2,pinNum // save the value in unused r2
+    .unreq pinNum // remove the alias from r0
+    pinNum .req r2 // put the alias on r2
+
+    // Get the gpio controller address
+    bl GetGpioAddress
+    gpioAddr .req r0 // give the gpio controller address an alias
+
+    // Determine if the pin output set/clear is in register 0 or 1
+    pinBank .req r3
+    lsr pinBank,pinNum,#5 // Divide by 32 to determine register 0 or 1
+    lsl pinBank,#2 // multiply by 4 to get relative address
+    add gpioAddr,pinBank // add to gpioaddr to get address of set/clear register - 
+    .unreq pinBank
+
+    // Determine the relative pin number to the set/clear register
+    and pinNum,#31 // remainder after dividing by 32
+    setBit .req r3
+    mov setBit,#1
+    lsl setBit,pinNum // move a 1 into the position of the pin number
+    .unreq pinNum
+
+    // Sets the value in the set or clear register depending if the pin should be on or off
+    teq pinVal,#0 // checks if the pinVal is 0 - off, or 1 - on
+    .unreq pinVal
+    streq setBit,[gpioAddr,#40] // if on use the clear register
+    strne setBit,[gpioAddr,#28] // if off use the set register
+    .unreq setBit
+    .unreq gpioAddr
+
+    // return
+    pop {pc}
