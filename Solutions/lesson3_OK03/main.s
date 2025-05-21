@@ -8,24 +8,33 @@ _start:
 main:
     mov sp,#0x8000
 
-    // Sets led pin to output mode
-    pinNum .req r0
-    pinFunc .req r1
+    // Set up variables
+    pinNum .req r4
     mov pinNum,#47 // 47 is led pin
+    pinFunc .req r5
     mov pinFunc,#1 // 0b001 is output mode
-    bl SetGpioFunction
-    .unreq pinNum
-    .unreq pinFunc
-
-    // Turns led pin on
-    pinNum .req r0
-    pinVal .req r1
-    mov pinNum,#47 // 47 is led pin
+    pinVal .req r6
     mov pinVal,#0 // 0 sets pin to off, turning on led
-    bl SetGpio
-    .unreq pinNum
-    .unreq pinVal
+    waitVal .req r7
+    mov waitVal,#0x3F0000 // Large number that will take some real world time to subtract 1 to get to 0
+
+    // Sets led pin to output mode
+    mov r0,pinNum
+    mov r1,pinFunc
+    bl SetGpioFunction
 
     // Infinite loop
     loop$:
-    b loop$
+        // toggles between on and off
+        mvn pinVal,pinVal
+
+        // Sets to the pin to on or off based on pinVal
+        mov r0,pinNum
+        mov r1,pinVal
+        bl SetGpio
+
+        // Wait
+        mov r0,waitVal
+        bl delay
+
+        b loop$
