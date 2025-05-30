@@ -35,17 +35,32 @@ SetGpioFunction:
         subhi pinNum,#10 // if invalid subtract 10
         addhi gpioAddr,#4 // if invalid move to the next register
         bhi functionLoop$ // loop until relative pin number is valid
-
-    // Set the determined function select register with the specified function
     add pinNum, pinNum,lsl #1 // mulitplication by 3 to get function select bit for relative pin number because each pin gets 3 bits to specify function
-// UPDATE ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    lsl pinFunc,pinNum // shift function value to correct bit placement
-    str pinFunc,[gpioAddr] // set the determined function select register
 
-    // Return
+    // Shift pin function to correct bits for the pinNum
+    lsl pinFunc,pinNum // shift function value to correct bit placement
+
+    // Create mask
+    mask .req r3
+    mov mask,#7
+    lsl mask,pinNum
     .unreq pinNum
+    mvn mask,mask
+
+    // use mask to delete existing function for the selected pin
+    oldFunc .req r2
+	ldr oldFunc,[gpioAddr] // load existing gpio functions
+	and oldFunc,mask // use mask to delete existing function for the selected pin
+	.unreq mask
+
+    // set the determined function select register
+	orr pinFunc,oldFunc // set the function bits for the selected pin
+	.unreq oldFunc
+    str pinFunc,[gpioAddr] // set the determined function select register
     .unreq pinFunc
     .unreq gpioAddr
+
+    // Return
     pop {pc} // the lr was previously put onto the stack so we pop and put it into the pc to return
 
 // Turns a GPIO pin on or off.
