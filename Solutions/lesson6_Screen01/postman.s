@@ -59,7 +59,7 @@ MailboxRead:
             ldr status,[mailbox,#0x18]
 
             // check status
-            tst status,0x40000000
+            tst status,#0x40000000
             .unreq status
             bne wait2$
         
@@ -68,7 +68,7 @@ MailboxRead:
         ldr mail,[mailbox,#0]
 
         // check if channel is correct
-        ischan .req r3
+        inchan .req r3
         and inchan,mail,#0b1111
         teq inchan,channel
         .unreq inchan
@@ -76,6 +76,6 @@ MailboxRead:
     .unreq mailbox
     .unreq channel
 
-    and r0,mail,0xfffffff0
+    and r0,mail,#0xfffffff0
     .unreq mail
     pop {pc}
