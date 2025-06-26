@@ -34,7 +34,7 @@ MailboxWrite:
     .unreq channel
 
     // store the result to the write field
-    str value,[mailbox,#20]
+    str value,[mailbox,#0x20]
     .unreq value
     .unreq mailbox
     pop {pc}
